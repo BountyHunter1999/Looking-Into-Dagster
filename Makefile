@@ -3,3 +3,6 @@ create_project:
 	cd dagster_university && \
 	cp .env.example .env && \
 	pip install -e ".[dev]"
+
+run:
+	cd dagster_university && dagster dev -p 4001
