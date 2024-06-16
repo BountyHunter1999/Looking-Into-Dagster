@@ -1,6 +1,8 @@
 import requests
 from . import constants
 from dagster import asset
+import duckdb
+import os
 
 
 @asset
