@@ -4,5 +4,8 @@ create_project:
 	cp .env.example .env && \
 	pip install -e ".[dev]"
 
+# pip install -e ".[dev] doing this dagster can pick up changes in our asset function's code without needing to reload
+# the code location again
+
 run:
 	cd dagster_university && dagster dev -p 4001

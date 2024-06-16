@@ -31,3 +31,46 @@ def taxi_zones_file() -> None:
     )
     with open(constants.TAXI_ZONES_FILE_PATH, "wb") as f:
         f.write(data.content)
+
+
+@asset(deps=["taxi_trips_file"])
+def taxi_trips() -> None:
+    """
+    The raw taxi trips dataset, loaded into DuckDB database
+    """
+    sql_query = """
+        CREATE OR REPLACE TABLE trips AS (
+            SELECT
+                VendorID AS vendor_id,
+                PULocationID AS pickup_zone_id,
+                DOLocationID AS dropoff_zone_id,
+                RatecodeID AS rate_code_id,
+                payment_type AS payment_type,
+                tpep_dropoff_datetime AS dropoff_datetime,
+                tpep_pickup_datetime AS pickup_datetime,
+                trip_distance AS trip_distance,
+                passenger_count AS passenger_count,
+                total_amount AS total_amount
+            FROM 'data/raw/taxi_trips_2023-03.parquet'
+        )
+    """
+
+    conn = duckdb.connect(os.getenv("DUCKDB_DATABASE"))
+    conn.execute(sql_query)
+
+
+@asset(deps=["taxi_zones_file"])
+def taxi_zones() -> None:
+    # CTAS
+    sql_query = f"""
+        CREATE OR REPLACE TABLE zones AS (
+            SELECT
+                LocationID AS zone_id,
+                zone,
+                borough,
+                the_geom AS geometry
+            FROM '{constants.TAXI_ZONES_FILE_PATH}'
+        )
+    """
+    conn = duckdb.connect(os.getenv("DUCKDB_DATABASE"))
+    conn.execute(sql_query)
