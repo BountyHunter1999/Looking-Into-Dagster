@@ -8,3 +8,8 @@ import duckdb
 import os
 
 from . import constants
+
+
+@asset(deps=["taxi_trips", "taxi_zones"])
+def manhattan_stats() -> None:
+    pass
