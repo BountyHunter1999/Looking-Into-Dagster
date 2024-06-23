@@ -10,6 +10,6 @@ metric_assets = load_assets_from_modules([metrics])
 defs = Definitions(
     assets=[*trip_assets, *metric_assets],
     resources={
-        "datavase": database_resource,
+        "database": database_resource,
     }
 )
