@@ -1,4 +1,5 @@
 from dagster import asset
+from dagster_duckdb import DuckDBResource
 
 from datetime import datetime, timedelta
 import plotly.express as px
@@ -13,7 +14,7 @@ from . import constants
 
 
 @asset(deps=["taxi_trips", "taxi_zones"])
-def manhattan_stats() -> None:
+def manhattan_stats(database: DuckDBResource) -> None:
     query = """
         SELECT
             zones.zone,
@@ -25,9 +26,8 @@ def manhattan_stats() -> None:
         WHERE borough = 'Manhattan' AND geometry IS NOT NULL
         GROUP BY zone, borough, geometry
         """
-
-    conn = duckdb.connect(os.getenv("DUCKDB_DATABASE"))
-    trips_by_zone = conn.execute(query).fetch_df()
+    with database.get_connection() as conn:
+        trips_by_zone = conn.execute(query).fetch_df()
 
     trips_by_zone["geometry"] = gpd.GeoSeries.from_wkt(trips_by_zone["geometry"])
     trips_by_zone = gpd.GeoDataFrame(trips_by_zone)
@@ -64,8 +64,8 @@ def manhattan_map() -> None:
 @asset(
     deps=["taxi_trips"],
 )
-def trips_by_week() -> None:
-    conn = duckdb.connect(os.getenv("DUCKDB_DATABASE"))
+def trips_by_week(database: DuckDBResource) -> None:
+
     start_date = datetime.strptime("2023-03-01", constants.DATE_FORMAT)
     end_date = datetime.strptime("2023-04-01", constants.DATE_FORMAT)
 
@@ -79,10 +79,10 @@ def trips_by_week() -> None:
             FROM trips
             WHERE DATE_TRUNC('week', pickup_datetime) = DATE_TRUNC('week', '{start_date_str}'::date)
         """
+        with database.get_connection() as conn:
+            data_for_week = conn.execute(query).fetch_df()
 
-        data_for_week = conn.execute(query).fetch_df().head()
-
-        print(data_for_week)
+        print(data_for_week.head())
         aggregate = (
             data_for_week.agg(
                 {

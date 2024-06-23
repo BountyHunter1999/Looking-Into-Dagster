@@ -62,7 +62,7 @@ def taxi_trips(database: DuckDBResource) -> None:
 
 
 @asset(deps=["taxi_zones_file"])
-def taxi_zones() -> None:
+def taxi_zones(database: DuckDBResource) -> None:
     # CTAS
     sql_query = f"""
         CREATE OR REPLACE TABLE zones AS (
