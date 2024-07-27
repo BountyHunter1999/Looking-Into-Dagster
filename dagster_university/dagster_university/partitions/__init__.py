@@ -1,4 +1,4 @@
-from dagster import MonthlyPartitionsDefinition
+from dagster import MonthlyPartitionsDefinition, WeeklyPartitionsDefinition
 from ..assets import constants
 
 # date range of the trip data to bring into the data pipeline
@@ -8,3 +8,5 @@ end_date = constants.END_DATE
 monthly_partition = MonthlyPartitionsDefinition(
     start_date=start_date, end_date=end_date
 )
+
+weekly_partition = WeeklyPartitionsDefinition(start_date=start_date, end_date=end_date)
