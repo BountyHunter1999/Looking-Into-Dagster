@@ -72,14 +72,13 @@ def taxi_trips(context: AssetExecutionContext, database: DuckDBResource) -> None
             total_amount double, partition_date varchar
         );
         
-        DELETE FROM trips WHERE paritition_date = '{month_to_fetch}';
+        DELETE FROM trips WHERE partition_date = '{month_to_fetch}';
         
         INSERT INTO trips
-        SELECT (
+        SELECT
             VendorID, PULocationID, DOLocationID, RatecodeID, payment_type, tpep_dropoff_datetime,
-            tpep_pickup_datetime, trip_distance, passenger_count, total_amount, '{month_to_fetch}' as partition_date
-        ) FROM '{constants.TAXI_TRIPS_TEMPLATE_FILE_PATH.format(month_to_fetch)}'
-        );
+            tpep_pickup_datetime, trip_distance, passenger_count, total_amount, '{month_to_fetch}' AS partition_date
+        FROM '{constants.TAXI_TRIPS_TEMPLATE_FILE_PATH.format(month_to_fetch)}';
     """
 
     # conn = duckdb.connect(os.getenv("DUCKDB_DATABASE"))
