@@ -41,26 +41,45 @@ def taxi_zones_file() -> None:
         f.write(data.content)
 
 
-@asset(deps=["taxi_trips_file"])
-def taxi_trips(database: DuckDBResource) -> None:
+@asset(deps=["taxi_trips_file"], partitions_def=monthly_partition)
+def taxi_trips(context: AssetExecutionContext, database: DuckDBResource) -> None:
     """
     The raw taxi trips dataset, loaded into DuckDB database
     """
-    sql_query = """
-        CREATE OR REPLACE TABLE trips AS (
-            SELECT
-                VendorID AS vendor_id,
-                PULocationID AS pickup_zone_id,
-                DOLocationID AS dropoff_zone_id,
-                RatecodeID AS rate_code_id,
-                payment_type AS payment_type,
-                tpep_dropoff_datetime AS dropoff_datetime,
-                tpep_pickup_datetime AS pickup_datetime,
-                trip_distance AS trip_distance,
-                passenger_count AS passenger_count,
-                total_amount AS total_amount
-            FROM 'data/raw/taxi_trips_2023-03.parquet'
-        )
+    # sql_query = """
+    #     CREATE OR REPLACE TABLE trips AS (
+    #         SELECT
+    #             VendorID AS vendor_id,
+    #             PULocationID AS pickup_zone_id,
+    #             DOLocationID AS dropoff_zone_id,
+    #             RatecodeID AS rate_code_id,
+    #             payment_type AS payment_type,
+    #             tpep_dropoff_datetime AS dropoff_datetime,
+    #             tpep_pickup_datetime AS pickup_datetime,
+    #             trip_distance AS trip_distance,
+    #             passenger_count AS passenger_count,
+    #             total_amount AS total_amount
+    #         FROM 'data/raw/taxi_trips_2023-03.parquet'
+    #     )
+    # """
+    partition_date_str = context.partition_key
+    month_to_fetch = partition_date_str[:-3]
+    sql_query = f"""
+        CREATE TABLE IF NOT EXISTS trips (
+            vendor_id integer, pickup_zone_id integer, dropoff_zone_id integer,
+            rate_code_id double, payment_type integer, dropoff_datetime timestamp,
+            pickup_datetime timestamp, trip_distance double, passenger_count double,
+            total_amount double, partition_date varchar
+        );
+        
+        DELETE FROM trips WHERE paritition_date = '{month_to_fetch}';
+        
+        INSERT INTO trips
+        SELECT (
+            VendorID, PULocationID, DOLocationID, RatecodeID, payment_type, tpep_dropoff_datetime,
+            tpep_pickup_datetime, trip_distance, passenger_count, total_amount, '{month_to_fetch}' as partition_date
+        ) FROM '{constants.TAXI_TRIPS_TEMPLATE_FILE_PATH.format(month_to_fetch)}'
+        );
     """
 
     # conn = duckdb.connect(os.getenv("DUCKDB_DATABASE"))
